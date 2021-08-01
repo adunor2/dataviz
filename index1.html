@@ -1,0 +1,181 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+  <title>Data Visualization with D3</title>
+  <link rel="stylesheet" href="style.css" type="text/css"> 
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+</head>
+<body style="background-color:#F2F1EF;" onload='init()'>
+    <div style="width: 100%; overflow: hidden;">
+        <div style="width: 100%; overflow: hidden;">
+            <p></p>
+            <h2 style="text-align: center;">Most decorated Olympians of the modern games.</h2>
+            <p style="text-align: center;">Please click on a bar for details.</p>
+        </div>
+        <div id="mcircles" style="width: 600px; float: left;">
+        <div style="margin-left: 60px;">
+            <button style="padding: 6px 28px; background-color: #6C7A89;" onclick="location.href='index.html'" type="button">Most Medals per Country</button>
+            <button style="padding: 6px 28px; background-color: #6C7A89;" onclick="location.href='index2.html'" type="button">Host Nations </button>
+        </div>
+            <svg></svg>
+        </div>
+        <div id="mbars" style="margin-left: 660px; margin-top: 300px;">
+            <svg></svg>
+        </div>
+   </div>
+ <script>
+   async function init(){
+   const data = await d3.csv("data/individual_medals.csv");
+  
+  const margin = 50;
+  const margin_left = 80;
+  const width = 600 - 2 * margin;
+  const height = 600 - 2 * margin;
+
+
+  // create a tooltip
+  var tooltip = d3.select("#mbars")
+    .append("div")
+    .style("position", "absolute")
+    .style("visibility", "hidden")
+    .style("background-color", "#6C7A89")
+    .style("margin-right", "100")
+    .style("padding", "10")
+    .style("box-shadow", "5px -5px 5px rgba(0,0,0,0.6)")
+
+  var svg = d3.select('#mcircles').select("svg")
+            .attr("width", width)
+            .attr("height", height)
+  
+  const chart = svg.append('g')
+      .attr('transform', `translate(${margin_left}, ${margin})`);
+
+
+  const xScale = d3.scaleBand()
+      .range([0, width])
+      .domain(data.map((d) => d.Name))
+      .padding(0.1)
+    
+  const yScale = d3.scaleLinear()
+      .range([height, 0])
+      .domain([0, 30]);
+
+  const makeYLines = () => d3.axisLeft()
+      .scale(yScale)
+
+
+  chart.append('g')
+      .attr('transform', `translate(0, ${height})`)
+      .call(d3.axisBottom(xScale))
+      .selectAll("text")
+      .attr("transform", "rotate(-45)");
+
+  chart.append('g')
+      .call(d3.axisLeft(yScale));
+
+  chart.append('g')
+      .attr('class', 'grid')
+      .call(makeYLines()
+        .tickSize(-width, 0, 0)
+        .tickFormat('')
+    )
+  
+    const barGroups = chart.selectAll()
+      .data(data)
+      .enter()
+      .append('g')
+
+    barGroups
+      .append('rect')
+      .attr('x', (d) => xScale(d.Name))
+      .attr('y', height)
+      .attr('height', 0)
+      .attr('width', xScale.bandwidth())
+      .style("fill", function(d){return d.Color;})
+      .transition().duration(1000).delay(1000)
+        .attr("height", (d) => height - yScale(d.Total))
+        .attr('y', (d) => yScale(d.Total));
+     
+    barGroups
+      .on('mouseenter', function (actual, i) {
+        d3.selectAll('.value')
+          .attr('opacity', 0.5)
+
+        d3.select(this)
+          .transition()
+          .duration(300)
+          .attr('opacity', 1)
+          .attr('x', (a) => xScale(a.Name) - 5)
+          .attr('width', xScale.bandwidth() + 10)
+          .select('.value').attr('opacity', 1)
+    })
+
+    .on('mouseleave', function () {
+        d3.selectAll('.value')
+          .attr('opacity', 1)
+        d3.select(this)
+          .transition()
+          .duration(300)
+          .attr('opacity', 1)
+          .attr('x', (a) => xScale(a.Name))
+          .attr('width', xScale.bandwidth())
+
+        chart.selectAll('#limit').remove()
+        chart.selectAll('.divergence').remove()
+      })
+
+    .on("click", function(d){
+        tooltip.style("top", (200)+"px").style("left",(640)+"px")
+        tooltip.selectAll("p").remove(); 
+        tooltip.style("visibility", "visible");
+                
+        tooltip.append("p")
+        .style("text-shadow","1px 1px 4px #FFFFFF")
+        .style("font-weight","bold")
+        .style("font-size","1.2em")
+        .style("color", "#000000")
+        .text(d.Athlete + "'s Olympics medals:");
+
+        tooltip.append("p")
+        .attr("class", "#Gold")
+        .style("color", "#F4D03F")
+        .text("Gold Medals: " + d.Gold); 
+
+        tooltip.append("p")
+          .attr("class", "#Silver")
+          .style("color", "#BDC3C7")
+          .text("Silver Medals: " + d.Silver); 
+
+        tooltip.append("p")
+          .attr("class", "#Bronze")
+          .style("color", "#CA6924")
+          .text("Bronze Medals: " + d.Bronze); 
+      });
+
+
+     barGroups 
+      .append('text')
+      .attr('x', (a) => xScale(a.Name) + xScale.bandwidth() / 2)
+      .attr('y', (a) => yScale(a.Total) + 30)
+      .attr('text-anchor', 'middle')
+      .text((a) => `${a.Total}`) 
+    
+    svg
+      .append('text')
+      .attr('x', -(height / 2) - margin)
+      .attr('y', margin_left / 2.4)
+      .attr('transform', 'rotate(-90)')
+      .attr('text-anchor', 'middle')
+      .text('Total number of medals')
+
+    svg.append('text')
+      .attr('x', width / 2 + margin)
+      .attr('y', height + margin * 2)
+      .attr('text-anchor', 'middle')
+      .text('Most decorated Olympians')
+    }
+ </script>
+ </body>
+</html>

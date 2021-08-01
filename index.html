@@ -1,0 +1,127 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+  <title>Data Visualization with D3</title>
+  <link rel="stylesheet" href="style.css" type="text/css">
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+</head>
+<body style="background-color:#F2F1EF;" onload='init()'>
+    <div style="width: 100%; overflow: hidden;">
+        <div style="width: 100%; overflow: hidden;">
+            <p></p>
+            <h2 style="text-align: center;">Olympics all-time medal winning nations.</h2>
+            <p style="text-align: center;">Please click on a nation's icon for details.</p>
+        </div>
+        <div id="mcircles" style="width: 600px; float: left;">
+        <div style="margin-left: 60px;">
+            <button style="padding: 6px 28px; background-color: #6C7A89;" onclick="location.href='index1.html'" type="button">Most Medals per Athlete</button>
+            <button style="padding: 6px 28px; background-color: #6C7A89;" onclick="location.href='index2.html'" type="button">Host Nations </button>
+        </div>
+            <svg></svg>
+        </div>
+        <div id="mbars" style="margin-left: 660px; margin-top: 300px;">
+            <svg></svg>
+        </div>
+   </div>
+ <script>
+     async function init(){
+        const data = await d3.csv("data/medals_by_country.csv");
+  
+        var width = 600, height = 600;
+        const margin = 50;
+
+        var radiusScale = d3.scaleSqrt().domain([1, 300]).range([10, 90])
+
+        var simulation = d3.forceSimulation()
+                    .force("x", d3.forceX(width /2).strength(0.09))
+                    .force("y", d3.forceY(height /2).strength(0.07))
+                    .force("collide", d3.forceCollide(function(d)
+                    {
+                        return radiusScale(d.Total /22) + 35;
+                    }))
+
+        // create a tooltip
+        var tooltip = d3.select("#mbars")
+            .append("div")
+            .style("position", "absolute")
+            .style("visibility", "hidden")
+            .style("background-color", "#6C7A89")
+            .style("margin-right", "100")
+            .style("padding", "10")
+            .style("box-shadow", "5px -5px 5px rgba(0,0,0,0.6)")
+            
+
+        var svg = d3.select('#mcircles').select("svg")
+            .attr("width", width)
+            .attr("height", height)
+
+         /* Define the data for the circles */
+        var elem = svg.selectAll("circle")
+            .data(data)
+
+        /*Create and place the "blocks" containing the circle and the text */  
+        var elemEnter = elem.enter()
+            .append("g")
+            .attr("transform","translate(" + margin + "," + 0 + ")")
+    
+        /*Create the circle for each block */
+        var circles = elemEnter.append("circle")
+            .attr("r", function(d){return (d.Total / 22)})
+            .style("fill", function(d){return d.Color})
+            .on("mouseover", function(d){
+                d3.select(this).style("stroke", function(d){return d.Color});
+                d3.select(this).style("stroke-width", "10");
+            })
+            .on("mouseout", function(){ d3.select(this).style("stroke", null);})
+            .on("click", function(d){
+                tooltip.style("top", (200)+"px").style("left",(640)+"px")
+                tooltip.selectAll("p").remove(); 
+                tooltip.style("visibility", "visible");
+                tooltip.append("p")
+                .style("text-shadow","1px 1px 4px #FFFFFF")
+                .style("font-weight","bold")
+                .style("font-size","1.2em")
+                .style("color", "#000000")
+                .text(d.Name + "'s Olympics medals:");
+
+                tooltip.append("p")
+                .attr("class", "#Gold")
+                .style("color", "#F4D03F")
+                .text("Gold Medals: " + d.Gold); 
+
+                tooltip.append("p")
+                .attr("class", "#Silver")
+                .style("color", "#BDC3C7")
+                .text("Silver Medals: " + d.Silver); 
+
+                tooltip.append("p")
+                .attr("class", "#Bronze")
+                .style("color", "#CA6924")
+                .text("Bronze Medals: " + d.Bronze); 
+            });
+            
+
+        /* Create the text for each block */
+        var mtext = elemEnter.append("text")
+            .attr("dx", function(d){return -20})
+            .text(function(d){return d.Name})
+
+        simulation.nodes(data)
+            .on("tick", ticked)
+
+        function ticked(){
+            //elem
+            circles
+                .attr("cx", function(d){return d.x;})
+                .attr("cy", function(d){return d.y;})
+
+            mtext
+                .attr("dx", function(d){return d.x - 17;})
+                .attr("dy", function(d){return d.y;})
+            } 
+    };
+</script>  
+  </body>
+  </html>

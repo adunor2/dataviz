@@ -1,0 +1,126 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+  <title>Data Visualization with D3</title>
+  <link rel="stylesheet" href="style.css" type="text/css">
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+</head>
+<body style="background-color:#F2F1EF;" onload='init()'>
+    <div style="width: 100%; overflow: hidden;">
+        <div style="width: 100%; overflow: hidden;">
+            <p></p>
+            <h2 style="text-align: center;">Olympics - nations who have hosted most times.</h2>
+            <p style="text-align: center;">Please click on a nation's icon for more details.</p>
+        </div>
+        <div id="mcircles" style="width: 600px; float: left;">
+        <div style="margin-left: 60px;">
+            <button style="padding: 6px 28px; background-color: #6C7A89;" onclick="location.href='index.html'" type="button">Most Medals per Country</button>
+            <button style="padding: 6px 28px; background-color: #6C7A89;" onclick="location.href='index1.html'" type="button">Most Medals per Athlete</button>
+         </div>
+            <svg></svg>
+        </div>
+        <div id="mbars" style="margin-left: 660px; margin-top: 300px;">
+            <svg></svg>
+        </div>
+   </div>
+ <script>
+     async function init(){
+        const data = await d3.csv("data/host_nations.csv");
+  
+        var width = 600, height = 500;
+        const margin = 50;
+
+        var radiusScale = d3.scaleSqrt().domain([0, 10]).range([0, 70]);
+        var simulation = d3.forceSimulation()
+                    .force("x", d3.forceX(width /2).strength(0.02))
+                    .force("y", d3.forceY(height /2).strength(0.02))
+                    .force("collide", d3.forceCollide(function(d)
+                    {
+                        return radiusScale(d.Total);
+                    }))
+
+        // create a tooltip
+        var tooltip = d3.select("#mbars")
+            .append("div")
+            .style("position", "absolute")
+            .style("visibility", "hidden")
+            .style("background-color", "#6C7A89")
+            .style("margin-right", "100")
+            .style("padding", "10")
+            .style("box-shadow", "5px -5px 5px rgba(0,0,0,0.6)")
+            
+
+        var svg = d3.select('#mcircles').select("svg")
+            .attr("width", width)
+            .attr("height", height)
+
+         /* Define the data for the circles */
+        var elem = svg.selectAll("circle")
+            .data(data)
+
+        /*Create and place the "blocks" containing the circle and the text */  
+        var elemEnter = elem.enter()
+            .append("g")
+            .attr("transform","translate(" + margin + "," + 100 + ")")
+    
+        /*Create the circle for each block */
+        var circles = elemEnter.append("circle")
+            .attr("r", function(d){return radiusScale(d.Total);})
+            .attr("fill", "#4B77BE")
+            .on("mouseover", function(){
+                d3.select(this).style("stroke", "#FFFFFF");
+                d3.select(this).style("stroke-width", "2");
+            })
+            .on("mouseout", function(){ d3.select(this).style("stroke", null);})
+            .on("click", function(d){
+                tooltip.style("top", (200)+"px").style("left",(640)+"px")
+                tooltip.selectAll("p").remove(); 
+                tooltip.style("visibility", "visible")
+                tooltip.append("p")
+                .style("text-shadow","1px 1px 4px #FFFFFF")
+                .style("font-weight","bold")
+                .style("font-size","1.2em")
+                .style("color", "#000000")
+                .text(d.Country + ", Olympics hosts:");
+
+                tooltip.append("p")
+                .style("color", "#F4D03F")
+                .text(d.Country + " has hosted on "+ d.Total + " occasion(s)."); 
+
+                tooltip.append("p")
+                .style("color", "#FFFFFF")
+                .text("In " + d.Summer); 
+
+                tooltip.append("p")
+                .style("font-size",".7em")
+                .style("font-style", "italic")
+                .style("color", "#BDC3C7")
+                .style("word-wrap", "break-word")
+                .text("Note: These are figures for both Winter and Summer Olympics therefore a nation may host twice in a year."); 
+            });
+            
+
+        /* Create the text for each block */
+        var mtext = elemEnter.append("text")
+            .attr("dx", function(d){return -20})
+            .text(function(d){return d.Country})
+
+        simulation.nodes(data)
+            .on("tick", ticked)
+
+        function ticked(){
+            //elem
+            circles
+                .attr("cx", function(d){return d.x;})
+                .attr("cy", function(d){return d.y;})
+
+            mtext
+                .attr("dx", function(d){return d.x - 17;})
+                .attr("dy", function(d){return d.y;})
+            } 
+    };
+</script>  
+  </body>
+  </html>
